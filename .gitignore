@@ -1,0 +1,9 @@
+.idea
+vendor/
+composer.phar
+composer.lock
+.phpunit.result.cache
+coverage/
+*.sublime*
+clover.xml
+.runway-config.json

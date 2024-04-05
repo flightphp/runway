@@ -1,0 +1,27 @@
+#!/usr/bin/env php
+<?php
+
+use flight\commands\RouteCommand;
+
+foreach ([ __DIR__ . '/../../autoload.php', __DIR__ . '/../vendor/autoload.php', __DIR__ . '/vendor/autoload.php' ] as $file) {
+	if (file_exists($file) === true) {
+		require($file);
+		break;
+	}
+}
+
+$cwd = getcwd();
+// Config this bad boy.
+if(file_exists($cwd.'/.runway-config.json') === false) {
+	return require __DIR__.'/scripts/setup.php';
+}
+
+Flight::map('start', function() {
+	return;
+});
+
+$config = json_decode(file_get_contents($cwd.'/.runway-config.json'), true);
+
+$consoleApp = new Ahc\Cli\Application('runway', '0.1.0');
+$consoleApp->add(new RouteCommand($config));
+$consoleApp->handle($_SERVER['argv']);
