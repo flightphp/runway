@@ -55,7 +55,8 @@ class RouteCommand extends AbstractBaseCommand
                     'Pattern' => $route->pattern,
                     'Methods' => implode(', ', $route->methods),
                     'Alias' => $route->alias ?? '',
-                    'Streamed' => $route->is_streamed ? 'Yes' : 'No'
+                    'Streamed' => $route->is_streamed ? 'Yes' : 'No',
+                    'Has_Middleware' => $route->middleware ? 'Yes' : 'No'
                 ];
             }
         }
