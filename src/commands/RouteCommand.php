@@ -51,12 +51,24 @@ class RouteCommand extends AbstractBaseCommand
         $arrayOfRoutes = [];
         foreach ($routes as $route) {
             if ($this->shouldAddRoute($route) === true) {
+            	$middlewares = [];
+                if (!empty($route->middleware)) {
+                    try {
+                        $middlewares = array_map(function ($middleware) {
+                            $middleware_class_name = explode("\\", get_class($middleware));
+                            return preg_match("/^class@anonymous/", end($middleware_class_name)) ? 'Anonymous' : end($middleware_class_name);
+                        }, $route->middleware);
+                    } catch (\TypeError $e) {
+                        $middlewares[] = 'Bad Middleware';
+                    }
+                }
+                
                 $arrayOfRoutes[] = [
                     'Pattern' => $route->pattern,
                     'Methods' => implode(', ', $route->methods),
                     'Alias' => $route->alias ?? '',
                     'Streamed' => $route->is_streamed ? 'Yes' : 'No',
-                    'Has_Middleware' => $route->middleware ? 'Yes' : 'No'
+                    'Middleware' => !empty($middlewares) ? implode(",", $middlewares) : '-'
                 ];
             }
         }
