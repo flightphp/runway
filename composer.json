@@ -15,7 +15,8 @@
         }
     ],
     "require": {
-        "adhocore/cli": "^0.9.1"
+        "adhocore/cli": "^0.9.1",
+        "nette/php-generator": "^3.6"
     },
 	"require-dev": {
 		"phpstan/extension-installer": "^1.3",
