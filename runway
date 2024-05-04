@@ -14,24 +14,29 @@ if(file_exists($cwd.'/.runway-config.json') === false) {
 	return require __DIR__.'/scripts/setup.php';
 }
 
-// Flight::map('start', function() {
-// 	return;
-// });
-
 $config = json_decode(file_get_contents($cwd.'/.runway-config.json'), true);
 
-$consoleApp = new Ahc\Cli\Application('runway', '0.2.0');
+$consoleApp = new Ahc\Cli\Application('runway', '0.2.1');
+
+$cwd = getcwd();
 $paths = [
 	// Pull all commands from other flightphp repos
-	__DIR__.'/../flightphp/**/src/commands/*.php',
-	__DIR__.'/../flightphp/**/flight/commands/*.php',
+	$cwd.'/vendor/flightphp/**/src/commands/*.php',
+	$cwd.'/vendor/flightphp/**/flight/commands/*.php',
+	__DIR__.'/../../**/src/commands/*.php',
+	__DIR__.'/../../**/flight/commands/*.php',
+	$cwd.'/src/commands/*.php',
+	$cwd.'/flight/commands/*.php',
 
 	// Pull all commands from other flightphp repos with hyphens
 	__DIR__.'/../flightphp-**/**/src/commands/*.php',
+	$cwd.'/vendor/flightphp-**/**/src/commands/*.php',
 
 	// Pull all commands from other flightphp repos locally
 	__DIR__.'/../flightphp-**/src/commands/*.php',
 	__DIR__.'/../flightphp-**/flight/commands/*.php',
+	$cwd.'/vendor/flightphp-**/src/commands/*.php',
+	$cwd.'/vendor/flightphp-**/flight/commands/*.php',
 
 	// Pull commands from this repo
 	__DIR__.'/src/commands/*.php'
