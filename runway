@@ -1,8 +1,6 @@
 #!/usr/bin/env php
 <?php
 
-use flight\commands\RouteCommand;
-
 foreach ([ __DIR__ . '/../../autoload.php', __DIR__ . '/../vendor/autoload.php', __DIR__ . '/vendor/autoload.php' ] as $file) {
 	if (file_exists($file) === true) {
 		require($file);
@@ -16,12 +14,43 @@ if(file_exists($cwd.'/.runway-config.json') === false) {
 	return require __DIR__.'/scripts/setup.php';
 }
 
-Flight::map('start', function() {
-	return;
-});
+// Flight::map('start', function() {
+// 	return;
+// });
 
 $config = json_decode(file_get_contents($cwd.'/.runway-config.json'), true);
 
-$consoleApp = new Ahc\Cli\Application('runway', '0.1.0');
-$consoleApp->add(new RouteCommand($config));
+$consoleApp = new Ahc\Cli\Application('runway', '0.2.0');
+$paths = [
+	// Pull all commands from other flightphp repos
+	__DIR__.'/../flightphp/**/src/commands/*.php',
+	__DIR__.'/../flightphp/**/flight/commands/*.php',
+
+	// Pull all commands from other flightphp repos with hyphens
+	__DIR__.'/../flightphp-**/**/src/commands/*.php',
+
+	// Pull all commands from other flightphp repos locally
+	__DIR__.'/../flightphp-**/src/commands/*.php',
+	__DIR__.'/../flightphp-**/flight/commands/*.php',
+
+	// Pull commands from this repo
+	__DIR__.'/src/commands/*.php'
+];
+
+$addedCommands = [];
+foreach($paths as $path) {
+	foreach(glob($path) as $commandPath) {
+		if(basename($commandPath) === 'AbstractBaseCommand.php') {
+			continue;
+		}
+		$command = str_replace('.php', '', basename($commandPath));
+		$command = 'flight\\commands\\'.$command;
+		if(in_array($command, $addedCommands, true) === true) {
+			continue;
+		}
+		$addedCommands[] = $command;
+		require_once $commandPath;
+		$consoleApp->add(new $command($config));
+	}
+}
 $consoleApp->handle($_SERVER['argv']);

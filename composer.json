@@ -15,7 +15,6 @@
         }
     ],
     "require": {
-        "flightphp/core": "^3.7",
         "adhocore/cli": "^0.9.1"
     },
 	"require-dev": {
