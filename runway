@@ -16,7 +16,7 @@ if(file_exists($cwd.'/.runway-config.json') === false) {
 
 $config = json_decode(file_get_contents($cwd.'/.runway-config.json'), true);
 
-$consoleApp = new Ahc\Cli\Application('runway', '0.2.1');
+$consoleApp = new Ahc\Cli\Application('runway', '0.2.2');
 
 $cwd = getcwd();
 $paths = [
