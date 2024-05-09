@@ -16,7 +16,7 @@ if(file_exists($cwd.'/.runway-config.json') === false) {
 
 $config = json_decode(file_get_contents($cwd.'/.runway-config.json'), true);
 
-$consoleApp = new Ahc\Cli\Application('runway', '0.2.2');
+$consoleApp = new Ahc\Cli\Application('runway', '0.2.3');
 
 $cwd = getcwd();
 $paths = [
@@ -27,6 +27,8 @@ $paths = [
 	__DIR__.'/../../**/flight/commands/*.php',
 	$cwd.'/src/commands/*.php',
 	$cwd.'/flight/commands/*.php',
+	$cwd.'/app/commands/*.php',
+	$cwd.'/commands/*.php',
 
 	// Pull all commands from other flightphp repos with hyphens
 	__DIR__.'/../flightphp-**/**/src/commands/*.php',
