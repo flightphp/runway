@@ -5,7 +5,7 @@ Runway is a console app for managing your Flight projects. This is built off the
 # Basic Usage
 
 ```bash
-php runway --help
+vendor/bin/runway --help
 ```
 
 This will show you all the possible commands you can run with Runway.
@@ -13,7 +13,7 @@ This will show you all the possible commands you can run with Runway.
 You can see the options for each of the commands by adding `--help` or `-h` to the command.
 
 ```bash
-php runway routes --help
+vendor/bin/runway routes --help
 ```
 
 # Installation
