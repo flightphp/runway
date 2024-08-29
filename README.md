@@ -2,6 +2,8 @@
 
 Runway is a console app for managing your Flight projects. This is built off the backbone of the amazing [adhocore/php-cli](https://github.com/adhocore/php-cli) libraries. 
 
+> v1.0 requires PHP 8.2+. For PHP 7.4, 8.0, and 8.1 use version 0.2.3 and forward.
+
 # Basic Usage
 
 ```bash
