@@ -41,7 +41,11 @@ $paths = [
 	$cwd.'/vendor/flightphp-**/flight/commands/*.php',
 
 	// Pull commands from this repo
-	__DIR__.'/src/commands/*.php'
+	__DIR__.'/src/commands/*.php',
+
+	// Pull commands from the app root
+	$config['app_root'].'/commands/*.php',
+	$config['app_root'].'/command/*.php'
 ];
 
 $addedCommands = [];
