@@ -16,48 +16,96 @@ if(file_exists($cwd.'/.runway-config.json') === false) {
 
 $config = json_decode(file_get_contents($cwd.'/.runway-config.json'), true);
 
-$consoleApp = new Ahc\Cli\Application('runway', '1.0.0');
+$consoleApp = new Ahc\Cli\Application('runway', '1.1.0');
 
 $cwd = getcwd();
-$paths = [
-	// Pull all commands from other flightphp repos
-	$cwd.'/vendor/flightphp/**/src/commands/*.php',
-	$cwd.'/vendor/flightphp/**/flight/commands/*.php',
-	__DIR__.'/../../**/src/commands/*.php',
-	__DIR__.'/../../**/flight/commands/*.php',
-	$cwd.'/src/commands/*.php',
-	$cwd.'/flight/commands/*.php',
-	$cwd.'/app/commands/*.php',
-	$cwd.'/commands/*.php',
 
-	// Pull all commands from other flightphp repos with hyphens
-	__DIR__.'/../flightphp-**/**/src/commands/*.php',
-	$cwd.'/vendor/flightphp-**/**/src/commands/*.php',
-
-	// Pull all commands from other flightphp repos locally
-	__DIR__.'/../flightphp-**/src/commands/*.php',
-	__DIR__.'/../flightphp-**/flight/commands/*.php',
-	$cwd.'/vendor/flightphp-**/src/commands/*.php',
-	$cwd.'/vendor/flightphp-**/flight/commands/*.php',
-
-	// Pull commands from this repo
-	__DIR__.'/src/commands/*.php'
+// root paths are the paths to get to the root of a project
+$rootPaths = [ 
+	$cwd, 
+	__DIR__ 
 ];
+
+if(isset($config['root_paths'])) {
+	$rootPaths = array_merge($rootPaths, $config['root_paths']);
+}
+
+// base paths are paths to get to the base directory of subprojectsprojects.
+$basePaths = [
+	'', // to capture commands in the root of the project
+	'/**', // capture random packages
+	'/**/**', // capture more randomness
+	'/**/**/**', // this is getting fun now
+	'/**/**/**/**', // yee-freakin'-haw!
+];
+
+if(isset($config['base_paths'])) {
+	$basePaths = array_merge($basePaths, $config['base_paths']);
+}
+
+// Final paths are the final directories where it's expecting to find commands
+$finalPaths = [
+	'/src/commands/*.php',
+	'/flight/commands/*.php',
+	'/commands/*.php',
+];
+
+// Add the app root if you decided to configure it
+if(isset($config['app_root']) === true) {
+	$finalPaths[] = '/'.$config['app_root'].'commands/*.php';
+}
+
+if(isset($config['final_paths'])) {
+	$finalPaths = array_merge($finalPaths, $config['final_paths']);
+}
+
+// Now that we've figured out all the possible paths, let's do this!
+foreach($rootPaths as $rootPath) {
+	foreach($basePaths as $basePath) {
+		foreach($finalPaths as $finalPath) {
+			$paths[] = $rootPath.$basePath.$finalPath;
+		}
+	}
+}
+
+// These are paths to check for commands
+if(isset($config['paths'])) {
+	$paths = array_merge($paths, $config['paths']);
+}
 
 $addedCommands = [];
 foreach($paths as $path) {
 	foreach(glob($path) as $commandPath) {
-		if(basename($commandPath) === 'AbstractBaseCommand.php') {
+
+		$baseName = basename($commandPath);
+
+		// Ignore the AbstractBaseCommand class
+		if($baseName === 'AbstractBaseCommand.php') {
 			continue;
 		}
-		$command = str_replace('.php', '', basename($commandPath));
-		$command = 'flight\\commands\\'.$command;
+		$command = str_replace('.php', '', $baseName);
+		
+		// pull the namespace from the contents of the file
+		$contents = file_get_contents($commandPath);
+		preg_match('/namespace (.*);/', $contents, $matches);
+		$namespace = $matches[1];
+		$command = $namespace.'\\'.$command;
+
+		// To prevent duplicates from being loaded
 		if(in_array($command, $addedCommands, true) === true) {
 			continue;
 		}
+		// Keep track of the commands added
 		$addedCommands[] = $command;
-		require_once $commandPath;
+		
+		// Get the code
+		require $commandPath;
+
+		// Add the command
 		$consoleApp->add(new $command($config));
 	}
 }
-$consoleApp->handle($_SERVER['argv']);
+
+$argv = (array) $_SERVER['argv'];
+
+$consoleApp->handle($argv);
