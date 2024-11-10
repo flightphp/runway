@@ -101,6 +101,11 @@ foreach($paths as $path) {
 		// Get the code
 		require $commandPath;
 
+		// Ignore classes extending TestCase
+		if(is_subclass_of($command, PHPUnit\Framework\TestCase::class)) {
+			continue;
+		}
+
 		// Add the command
 		$consoleApp->add(new $command($config));
 	}
