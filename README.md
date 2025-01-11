@@ -2,10 +2,12 @@
 
 Runway is a console app for managing your Flight projects. This is built off the backbone of the amazing [adhocore/php-cli](https://github.com/adhocore/php-cli) libraries. 
 
+> v1.0 requires PHP 8.2+. For PHP 7.4, 8.0, and 8.1 use version 0.2.3 and forward.
+
 # Basic Usage
 
 ```bash
-php runway --help
+vendor/bin/runway --help
 ```
 
 This will show you all the possible commands you can run with Runway.
@@ -13,7 +15,7 @@ This will show you all the possible commands you can run with Runway.
 You can see the options for each of the commands by adding `--help` or `-h` to the command.
 
 ```bash
-php runway routes --help
+vendor/bin/runway routes --help
 ```
 
 # Installation

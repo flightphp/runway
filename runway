@@ -16,7 +16,7 @@ if(file_exists($cwd.'/.runway-config.json') === false) {
 
 $config = json_decode(file_get_contents($cwd.'/.runway-config.json'), true);
 
-$consoleApp = new Ahc\Cli\Application('runway', '0.2.4');
+$consoleApp = new Ahc\Cli\Application('runway', '0.2.5');
 
 $cwd = getcwd();
 
@@ -79,8 +79,8 @@ foreach($paths as $path) {
 
 		$baseName = basename($commandPath);
 
-		// Ignore the AbstractBaseCommand class
-		if($baseName === 'AbstractBaseCommand.php') {
+		// Ignore the AbstractBaseCommand class and any *CommandTest.php files
+		if($baseName === 'AbstractBaseCommand.php' || strpos($baseName, 'CommandTest.php') !== false) {
 			continue;
 		}
 		$command = str_replace('.php', '', $baseName);
@@ -100,6 +100,11 @@ foreach($paths as $path) {
 		
 		// Get the code
 		require $commandPath;
+
+		// Ignore classes extending TestCase
+		if(is_subclass_of($command, PHPUnit\Framework\TestCase::class)) {
+			continue;
+		}
 
 		// Add the command
 		$consoleApp->add(new $command($config));
