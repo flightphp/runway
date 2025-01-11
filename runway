@@ -79,8 +79,8 @@ foreach($paths as $path) {
 
 		$baseName = basename($commandPath);
 
-		// Ignore the AbstractBaseCommand class
-		if($baseName === 'AbstractBaseCommand.php') {
+		// Ignore the AbstractBaseCommand class and any *CommandTest.php files
+		if($baseName === 'AbstractBaseCommand.php' || strpos($baseName, 'CommandTest.php') !== false) {
 			continue;
 		}
 		$command = str_replace('.php', '', $baseName);
