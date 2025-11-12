@@ -19,7 +19,8 @@
         "phpstan/phpstan": "^1.10",
         "phpunit/phpunit": "^9.5",
         "rregeer/phpunit-coverage-check": "^0.3.1",
-        "squizlabs/php_codesniffer": "^3.8"
+        "squizlabs/php_codesniffer": "^3.8",
+        "flightphp/core": "^3.17"
 	},
 	"scripts": {
         "test": "phpunit",
@@ -40,8 +41,7 @@
         }
     },
     "require": {
-		"php": "^8.2",
-        "adhocore/cli": "^1.7",
-        "nette/php-generator": "^4.1"
+        "adhocore/cli": "^0.9 || ^1.7",
+        "nette/php-generator": "^3.1 || ^4.1"
     }
 }
