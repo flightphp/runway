@@ -1,6 +1,8 @@
 #!/usr/bin/env php
 <?php
 
+use Ahc\Cli\Input\Command;
+
 foreach ([ __DIR__ . '/../../autoload.php', __DIR__ . '/../vendor/autoload.php', __DIR__ . '/vendor/autoload.php' ] as $file) {
 	if (file_exists($file) === true) {
 		require($file);
@@ -8,17 +10,128 @@ foreach ([ __DIR__ . '/../../autoload.php', __DIR__ . '/../vendor/autoload.php',
 	}
 }
 
+$consoleApp = new Ahc\Cli\Application('runway', '1.2.0');
+
+$io = $consoleApp->io();
+
 $cwd = getcwd();
-// Config this bad boy.
-if(file_exists($cwd.'/.runway-config.json') === false) {
-	return require __DIR__.'/scripts/setup.php';
+
+// Root detection markers in priority order. We'll walk upward from a small set of
+// starting points (CWD and script dir) and stop at the first marker we find.
+$foundMarker = null;
+$configPath = null;
+
+// Respect RUNWAY_ROOT environment variable as an explicit override.
+$envRoot = getenv('RUNWAY_ROOT') ?: null;
+
+$startingPoints = [];
+if ($envRoot) {
+	$startingPoints[] = $envRoot;
+} else {
+	$startingPoints[] = $cwd;
+	$startingPoints[] = __DIR__;
 }
 
-$config = json_decode(file_get_contents($cwd.'/.runway-config.json'), true);
+$maxDepth = 12;
+foreach ($startingPoints as $start) {
+	$dir = rtrim($start, '/');
+	for ($i = 0; $i < $maxDepth && $dir !== '' && $dir !== '/'; $i++) {
+		// 1) explicit runway config
+		if (file_exists($dir . '/.runway-config.json')) {
+			$foundMarker = '.runway-config.json';
+			$configPath = $dir . '/.runway-config.json';
+			$projectRoot = $dir;
+			break 2;
+		}
 
-$consoleApp = new Ahc\Cli\Application('runway', '1.1.2');
+		// 2) app config (Flight projects)
+		if (file_exists($dir . '/app/config/config.php')) {
+			$foundMarker = 'app/config/config.php';
+			$configPath = $dir . '/app/config/config.php';
+			$projectRoot = $dir;
+			break 2;
+		}
 
-$cwd = getcwd();
+		// 3) vendor autoload (installed deps)
+		if (file_exists($dir . '/vendor/autoload.php')) {
+			$foundMarker = 'vendor/autoload.php';
+			$projectRoot = $dir;
+			// no configPath here; we'll set $config later if available
+			break 2;
+		}
+
+		// 4) composer.json (skip if this candidate is inside a vendor/ path)
+		if (file_exists($dir . '/composer.json') && strpos($dir, '/vendor/') === false) {
+			$foundMarker = 'composer.json';
+			$projectRoot = $dir;
+			break 2;
+		}
+
+		// 5) git repo marker
+		if (is_dir($dir . '/.git')) {
+			$foundMarker = '.git';
+			$projectRoot = $dir;
+			break 2;
+		}
+
+		// 6) README fallback
+		if (file_exists($dir . '/README.md') || file_exists($dir . '/README')) {
+			$foundMarker = 'README';
+			$projectRoot = $dir;
+			break 2;
+		}
+
+		$parent = dirname($dir);
+		if ($parent === $dir) {
+			break;
+		}
+		$dir = $parent;
+	}
+}
+
+// If nothing found, fall back to CWD (safer than failing; we warn later).
+if (!isset($projectRoot) || $projectRoot === null) {
+	$projectRoot = $cwd;
+}
+
+// Use the discovered project root as the working directory for the rest of the script
+$cwd = $projectRoot;
+chdir($cwd);
+define('RUNWAY_PROJECT_ROOT', $cwd);
+
+// Determine primary config load and preferred write path.
+// We want reads for runtime runway settings to come from .runway-config.json when present
+// (read-only). However, for application config writes we prefer the project's
+// `app/config/config.php` if it exists. We'll load $config from the PHP config file
+// when available so commands that update config.php continue to work.
+$appConfigPath = $projectRoot . '/app/config/config.php';
+$dotRunwayPath = $projectRoot . '/.runway-config.json';
+
+$config = [];
+
+// Pull from config.php file
+if (file_exists($appConfigPath) === true) {
+	// Prefer PHP app config for reads/writes
+	$config = require $appConfigPath;
+	$configDirectory = dirname($appConfigPath);
+	if(file_exists($configDirectory.'/services.php') === true) {
+		require $configDirectory.'/services.php';
+	}
+} 
+
+if (empty($config['runway']) === true) {
+	$config['runway'] = [];
+}
+
+// Override with .runway-config.json for reads
+if (file_exists($dotRunwayPath) === true) {
+	$dotConfig = json_decode(file_get_contents($dotRunwayPath), true);
+	if (is_array($dotConfig) === true) {
+		$config['runway'] = array_merge($config['runway'], $dotConfig);
+	}
+}
+
+$runwayConfig = $config['runway'] ?? [];
 
 // root paths are the paths to get to the root of a project
 $rootPaths = [ 
@@ -26,8 +139,8 @@ $rootPaths = [
 	__DIR__ 
 ];
 
-if(isset($config['root_paths'])) {
-	$rootPaths = array_merge($rootPaths, $config['root_paths']);
+if(isset($runwayConfig['root_paths'])) {
+	$rootPaths = array_merge($rootPaths, $runwayConfig['root_paths']);
 }
 
 // base paths are paths to get to the base directory of subprojectsprojects.
@@ -39,8 +152,8 @@ $basePaths = [
 	'/**/**/**/**', // yee-freakin'-haw!
 ];
 
-if(isset($config['base_paths'])) {
-	$basePaths = array_merge($basePaths, $config['base_paths']);
+if(isset($runwayConfig['base_paths'])) {
+	$basePaths = array_merge($basePaths, $runwayConfig['base_paths']);
 }
 
 // Final paths are the final directories where it's expecting to find commands
@@ -51,12 +164,12 @@ $finalPaths = [
 ];
 
 // Add the app root if you decided to configure it
-if(isset($config['app_root']) === true) {
-	$finalPaths[] = '/'.$config['app_root'].'commands/*.php';
+if(isset($runwayConfig['app_root']) === true) {
+	$finalPaths[] = '/'.$runwayConfig['app_root'].'commands/*.php';
 }
 
-if(isset($config['final_paths'])) {
-	$finalPaths = array_merge($finalPaths, $config['final_paths']);
+if(isset($runwayConfig['final_paths'])) {
+	$finalPaths = array_merge($finalPaths, $runwayConfig['final_paths']);
 }
 
 // Now that we've figured out all the possible paths, let's do this!
@@ -69,8 +182,8 @@ foreach($rootPaths as $rootPath) {
 }
 
 // These are paths to check for commands
-if(isset($config['paths'])) {
-	$paths = array_merge($paths, $config['paths']);
+if(isset($runwayConfig['paths'])) {
+	$paths = array_merge($paths, $runwayConfig['paths']);
 }
 
 $addedCommands = [];
@@ -109,6 +222,11 @@ foreach($paths as $path) {
 		// Add the command
 		$consoleApp->add(new $command($config));
 	}
+}
+
+// Config this bad boy.
+if(file_exists($dotRunwayPath) === false && empty($config['runway']) === true) {
+	$config['runway'] = require __DIR__.'/scripts/setup.php';
 }
 
 $argv = (array) $_SERVER['argv'];

@@ -7,3 +7,4 @@ coverage/
 *.sublime*
 clover.xml
 .runway-config.json
+app/config/config.php
