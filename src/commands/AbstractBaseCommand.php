@@ -35,6 +35,46 @@ abstract class AbstractBaseCommand extends \Ahc\Cli\Input\Command
         $this->config = $config;
     }
 
+	/**
+	 * Gets the 'runway' key from the config
+	 *
+	 * @return void
+	 */
+	protected function getRunwayConfig() {
+		return $this->app()->handle([ PROJECT_ROOT.'/runway', 'config:get', 'runway' ]);
+	}
+
+	/**
+	 * Gets a single value from the 'runway' config
+	 *
+	 * @param string $key the config key to get (dot notation)
+	 * @return mixed
+	 */
+	protected function getRunwayConfigValue(string $key) {
+		return $this->app()->handle([ PROJECT_ROOT.'/vendor/bin/runway', 'config:get', 'runway.'.$key ]);
+	}
+
+	/**
+	 * Sets the 'runway' key in the config
+	 *
+	 * @param array $newConfig the whole config array to set
+	 * @return void
+	 */
+	protected function setRunwayConfig(array $newConfig): void {
+		$this->app()->handle([ PROJECT_ROOT.'/vendor/bin/runway', 'config:set', 'runway', escapeshellarg(json_encode($newConfig)) ]);
+	}
+
+	/**
+	 * Sets a single value inside the 'runway' config
+	 *
+	 * @param string $key   the config key to set (dot notation)
+	 * @param mixed  $value the value to set
+	 * @return void
+	 */
+	protected function setRunwayConfigValue(string $key, $value): void {
+		$this->app()->handle([ PROJECT_ROOT.'/runway', 'config:set', 'runway.'.$key, escapeshellarg($value) ]);
+	}
+
     /**
      * Symfony-style addOption shim.
      * Maps to Ahc\Cli's option($raw, $desc, $filter = null, $default = null).
