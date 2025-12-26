@@ -87,7 +87,7 @@ abstract class AbstractBaseCommand extends \Ahc\Cli\Input\Command
      *
      * @return $this
      */
-    public function addOption(string $name, $shortcut = null, int $mode = null, string $description = '', $default = null): self
+    public function addOption(string $name, $shortcut = null, ?int $mode = null, string $description = '', $default = null): self
     {
         // Build raw option format Ahc\Cli expects, e.g. "-s, --name" or "--name"
         $raw = '';
@@ -139,7 +139,7 @@ abstract class AbstractBaseCommand extends \Ahc\Cli\Input\Command
      *
      * @return $this
      */
-    public function addArgument(string $name, int $mode = null, string $description = '', $default = null): self
+    public function addArgument(string $name, ?int $mode = null, string $description = '', $default = null): self
     {
         if ($mode === null) {
             $mode = self::OPTIONAL;
