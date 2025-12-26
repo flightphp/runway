@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace flight\commands;
 
-abstract class AbstractBaseCommand extends \Ahc\Cli\Input\Command
-{
-	/**
+abstract class AbstractBaseCommand extends \Ahc\Cli\Input\Command {
+    /**
      * Symfony-like constants for InputOption and InputArgument compatibility.
      * These mirror the numeric values used by Symfony's Console component.
      */
@@ -22,6 +21,8 @@ abstract class AbstractBaseCommand extends \Ahc\Cli\Input\Command
     /** @var array<string,mixed> */
     protected array $config;
 
+    protected string $projectRoot;
+
     /**
      * Construct
      *
@@ -29,51 +30,51 @@ abstract class AbstractBaseCommand extends \Ahc\Cli\Input\Command
      * @param string $description Good ol' description
      * @param array<string,mixed>  $config      config from .runway-config.json
      */
-    public function __construct(string $name, string $description, array $config)
-    {
+    public function __construct(string $name, string $description, array $config) {
         parent::__construct($name, $description);
         $this->config = $config;
+        $this->projectRoot = defined('PROJECT_ROOT') ? PROJECT_ROOT : getcwd();
     }
 
-	/**
-	 * Gets the 'runway' key from the config
-	 *
-	 * @return void
-	 */
-	protected function getRunwayConfig() {
-		return $this->app()->handle([ PROJECT_ROOT.'/runway', 'config:get', 'runway' ]);
-	}
+    /**
+     * Gets the 'runway' key from the config
+     *
+     * @return void
+     */
+    protected function getRunwayConfig() {
+        return $this->app()->handle([$this->projectRoot . '/vendor/bin/runway', 'config:get', 'runway']);
+    }
 
-	/**
-	 * Gets a single value from the 'runway' config
-	 *
-	 * @param string $key the config key to get (dot notation)
-	 * @return mixed
-	 */
-	protected function getRunwayConfigValue(string $key) {
-		return $this->app()->handle([ PROJECT_ROOT.'/vendor/bin/runway', 'config:get', 'runway.'.$key ]);
-	}
+    /**
+     * Gets a single value from the 'runway' config
+     *
+     * @param string $key the config key to get (dot notation)
+     * @return mixed
+     */
+    protected function getRunwayConfigValue(string $key) {
+        return $this->app()->handle([$this->projectRoot . '/vendor/bin/runway', 'config:get', 'runway.' . $key]);
+    }
 
-	/**
-	 * Sets the 'runway' key in the config
-	 *
-	 * @param array $newConfig the whole config array to set
-	 * @return void
-	 */
-	protected function setRunwayConfig(array $newConfig): void {
-		$this->app()->handle([ PROJECT_ROOT.'/vendor/bin/runway', 'config:set', 'runway', escapeshellarg(json_encode($newConfig)) ]);
-	}
+    /**
+     * Sets the 'runway' key in the config
+     *
+     * @param array $newConfig the whole config array to set
+     * @return void
+     */
+    protected function setRunwayConfig(array $newConfig): void {
+        $this->app()->handle([$this->projectRoot . '/vendor/bin/runway', 'config:set', 'runway', json_encode($newConfig)]);
+    }
 
-	/**
-	 * Sets a single value inside the 'runway' config
-	 *
-	 * @param string $key   the config key to set (dot notation)
-	 * @param mixed  $value the value to set
-	 * @return void
-	 */
-	protected function setRunwayConfigValue(string $key, $value): void {
-		$this->app()->handle([ PROJECT_ROOT.'/runway', 'config:set', 'runway.'.$key, escapeshellarg($value) ]);
-	}
+    /**
+     * Sets a single value inside the 'runway' config
+     *
+     * @param string $key   the config key to set (dot notation)
+     * @param mixed  $value the value to set
+     * @return void
+     */
+    protected function setRunwayConfigValue(string $key, $value): void {
+        $this->app()->handle([$this->projectRoot . '/vendor/bin/runway', 'config:set', 'runway.' . $key, json_encode($value)]);
+    }
 
     /**
      * Symfony-style addOption shim.
@@ -87,8 +88,7 @@ abstract class AbstractBaseCommand extends \Ahc\Cli\Input\Command
      *
      * @return $this
      */
-    public function addOption(string $name, $shortcut = null, int $mode = null, string $description = '', $default = null): self
-    {
+    public function addOption(string $name, $shortcut = null, int $mode = null, string $description = '', $default = null): self {
         // Build raw option format Ahc\Cli expects, e.g. "-s, --name" or "--name"
         $raw = '';
 
@@ -139,8 +139,7 @@ abstract class AbstractBaseCommand extends \Ahc\Cli\Input\Command
      *
      * @return $this
      */
-    public function addArgument(string $name, int $mode = null, string $description = '', $default = null): self
-    {
+    public function addArgument(string $name, int $mode = null, string $description = '', $default = null): self {
         if ($mode === null) {
             $mode = self::OPTIONAL;
         }
@@ -164,39 +163,33 @@ abstract class AbstractBaseCommand extends \Ahc\Cli\Input\Command
     /**
      * Symfony-style setters/getters for name/description/help and application.
      */
-    public function setName(string $name): self
-    {
+    public function setName(string $name): self {
         $this->_name = $name;
 
         return $this;
     }
 
-    public function setDescription(string $description): self
-    {
+    public function setDescription(string $description): self {
         $this->_desc = $description;
 
         return $this;
     }
 
-    public function getName(): string
-    {
+    public function getName(): string {
         return $this->_name;
     }
 
-    public function getDescription(): string
-    {
+    public function getDescription(): string {
         return $this->_desc;
     }
 
-    public function setHelp(string $help): self
-    {
+    public function setHelp(string $help): self {
         $this->_usage = $help;
 
         return $this;
     }
 
-    public function getHelp(): ?string
-    {
+    public function getHelp(): ?string {
         return $this->_usage ?? null;
     }
 
@@ -205,8 +198,7 @@ abstract class AbstractBaseCommand extends \Ahc\Cli\Input\Command
      *
      * @return null|\Ahc\Cli\Application
      */
-    public function getApplication()
-    {
+    public function getApplication() {
         return $this->app();
     }
 }
