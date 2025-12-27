@@ -2,10 +2,8 @@
 
 namespace flight\commands;
 
-class ConfigSetCommand extends AbstractBaseCommand
-{
-    public function __construct(array $config)
-    {
+class ConfigSetCommand extends AbstractBaseCommand {
+    public function __construct(array $config) {
         parent::__construct('config:set', 'Set a config value in config.php (uses modern [] syntax)', $config);
 
         $this
@@ -13,12 +11,11 @@ class ConfigSetCommand extends AbstractBaseCommand
             ->argument('<value>', 'JSON-encoded value')
             ->usage(
                 '<bold>  runway config:set database.host \'{"host":"127.0.0.1"}\'</end>' . PHP_EOL .
-                '<bold>  runway config:set cache.enabled true</end>' . PHP_EOL
+                    '<bold>  runway config:set cache.enabled true</end>' . PHP_EOL
             );
     }
 
-    public function execute($key, $value = '')
-    {
+    public function execute($key, $value = '') {
         $io = $this->app()->io();
 
         $appConfigPath = RUNWAY_PROJECT_ROOT . '/app/config/config.php';
@@ -41,17 +38,16 @@ class ConfigSetCommand extends AbstractBaseCommand
         return 0;
     }
 
-	/**
-	 * Sets a config up
-	 *
-	 * @param string $configPath the path to the config.php file
-	 * @param string $key        the config key
-	 * @param mixed $value       whatever value
-	 * @return integer
-	 */
-	protected function setConfig(string $configPath, string $key, $value = ''): int
-	{
-		$io = $this->app()->io();
+    /**
+     * Sets a config up
+     *
+     * @param string $configPath the path to the config.php file
+     * @param string $key        the config key
+     * @param mixed $value       whatever value
+     * @return integer
+     */
+    protected function setConfig(string $configPath, string $key, $value = ''): int {
+        $io = $this->app()->io();
 
         if (is_file($configPath) === false) {
             $io->error("Config file not found: $configPath", true);
@@ -70,13 +66,13 @@ class ConfigSetCommand extends AbstractBaseCommand
 
         // Parse JSON value
         $decoded = json_decode($value, true);
-        if ((isset($decoded[0]) === true && ($decoded[0] === '{' || $decoded[0] === '[')) && json_last_error() !== JSON_ERROR_NONE) {
+        if ((isset($value[0]) === true && ($value[0] === '{' || $value[0] === '[')) && json_last_error() !== JSON_ERROR_NONE) {
             $io->error("Invalid JSON: " . json_last_error_msg(), true);
             return 1;
         } elseif (ctype_print($value) === true && json_last_error() !== JSON_ERROR_NONE) {
-			// Fallback: treat as string
-			$decoded = $value;
-		}
+            // Fallback: treat as string
+            $decoded = $value;
+        }
 
         // Deep merge into config
         $parts = explode('.', $key);
@@ -102,12 +98,12 @@ class ConfigSetCommand extends AbstractBaseCommand
             return 1;
         }
 
-        // Find return [...] block
-        if (!preg_match('#\breturn\s*\[[\s\S]*?\];#i', $source, $m)) {
+        // Find return [...] block using tokenization (robust against ]; in strings/comments)
+        $oldBlock = $this->findReturnBlock($source);
+        if ($oldBlock === null) {
             $io->error("Could not find return [...] block", true);
             return 1;
         }
-        $oldBlock = $m[0];
 
         // Detect indentation
         preg_match('/^([ \t]*)\[/m', $oldBlock, $indentMatch);
@@ -132,15 +128,14 @@ class ConfigSetCommand extends AbstractBaseCommand
             return 1;
         }
 
-		return 0;
-	}
+        return 0;
+    }
 
     /**
      * Set a config in a JSON file (used when app/config/config.php is not present).
      * Creates a backup and writes pretty JSON.
      */
-    public function setConfigJson(string $jsonPath, string $key, $value = ''): int
-    {
+    public function setConfigJson(string $jsonPath, string $key, $value = ''): int {
         $io = $this->app()->io();
 
         $data = [];
@@ -174,7 +169,11 @@ class ConfigSetCommand extends AbstractBaseCommand
             }
             $ref = &$ref[$part];
         }
-        $ref = $decoded;
+        if (is_array($ref) && is_array($decoded)) {
+            $ref = array_merge($ref, $decoded);
+        } else {
+            $ref = $decoded;
+        }
 
         // Backup original if present
         if (is_file($jsonPath) === true) {
@@ -200,9 +199,12 @@ class ConfigSetCommand extends AbstractBaseCommand
 
     /**
      * var_export() with short array syntax []
+     *
+     * @param mixed $value
+     * @param int $indent
+     * @return string
      */
-    private function var_export_short(mixed $value, int $indent = 0): string
-    {
+    private function var_export_short($value, int $indent = 0): string {
         $pad = str_repeat(' ', $indent);
         $step = 4;
 
@@ -214,7 +216,7 @@ class ConfigSetCommand extends AbstractBaseCommand
             }
 
             $items = [];
-            $isAssoc = !array_is_list($value);
+            $isAssoc = array_keys($value) !== range(0, count($value) - 1);
             $innerPad = str_repeat(' ', $indent + $step);
 
             foreach ($value as $k => $v) {
@@ -231,5 +233,65 @@ class ConfigSetCommand extends AbstractBaseCommand
         }
 
         return var_export($value, true);
+    }
+
+    /**
+     * Finds the return [...] block in a PHP source string using tokenization.
+     *
+     * @param string $source The PHP source code
+     * @return string|null The block content or null if not found
+     */
+    protected function findReturnBlock(string $source): ?string {
+        $tokens = token_get_all($source);
+        $count = count($tokens);
+        $startIdx = -1;
+        $endIdx = -1;
+        $depth = 0;
+
+        for ($i = 0; $i < $count; $i++) {
+            $token = $tokens[$i];
+
+            if ($startIdx === -1) {
+                if (is_array($token) && $token[0] === T_RETURN) {
+                    $j = $i + 1;
+                    while ($j < $count && is_array($tokens[$j]) && $tokens[$j][0] === T_WHITESPACE) {
+                        $j++;
+                    }
+                    if ($j < $count && $tokens[$j] === '[') {
+                        $startIdx = $i;
+                        $i = $j;
+                        $depth = 1;
+                    }
+                }
+                continue;
+            }
+
+            if ($token === '[') {
+                $depth++;
+            } elseif ($token === ']') {
+                $depth--;
+                if ($depth === 0) {
+                    $j = $i + 1;
+                    while ($j < $count && is_array($tokens[$j]) && ($tokens[$j][0] === T_WHITESPACE || $tokens[$j][0] === T_COMMENT || $tokens[$j][0] === T_DOC_COMMENT)) {
+                        $j++;
+                    }
+                    if ($j < $count && $tokens[$j] === ';') {
+                        $endIdx = $j;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($startIdx !== -1 && $endIdx !== -1) {
+            $block = '';
+            for ($i = $startIdx; $i <= $endIdx; $i++) {
+                $token = $tokens[$i];
+                $block .= is_array($token) ? $token[1] : $token;
+            }
+            return $block;
+        }
+
+        return null;
     }
 }
