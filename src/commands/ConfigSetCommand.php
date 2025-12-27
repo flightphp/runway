@@ -160,6 +160,9 @@ class ConfigSetCommand extends AbstractBaseCommand {
             $decoded = $value;
         }
 
+        // We don't actually save the runway key in the JSON file
+        $key = str_replace(['runway.', 'runway'], ['', ''], $key);
+
         // Deep merge into data
         $parts = explode('.', $key);
         $ref = &$data;
