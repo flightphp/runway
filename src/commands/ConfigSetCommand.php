@@ -169,7 +169,11 @@ class ConfigSetCommand extends AbstractBaseCommand {
             }
             $ref = &$ref[$part];
         }
-        $ref = $decoded;
+        if (is_array($ref) && is_array($decoded)) {
+            $ref = array_merge($ref, $decoded);
+        } else {
+            $ref = $decoded;
+        }
 
         // Backup original if present
         if (is_file($jsonPath) === true) {
