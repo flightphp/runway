@@ -10,7 +10,7 @@ foreach ([__DIR__ . '/../../autoload.php', __DIR__ . '/../vendor/autoload.php', 
 	}
 }
 
-$consoleApp = new Ahc\Cli\Application('runway', '1.2.0');
+$consoleApp = new Ahc\Cli\Application('runway', '1.2.4');
 
 $io = $consoleApp->io();
 
