@@ -111,6 +111,10 @@ $config = [];
 
 // Pull from config.php file
 if (file_exists($appConfigPath) === true) {
+
+	// Compensate for the lack of the $ds variable in some config files.
+	$ds = DIRECTORY_SEPARATOR;
+
 	// Prefer PHP app config for reads/writes
 	$config = require $appConfigPath;
 	$configDirectory = dirname($appConfigPath);
