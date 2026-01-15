@@ -41,13 +41,10 @@ if ($choice === '4') {
 
 $json = json_encode([
     'index_root' => $index_location,
-	'app_root' => $app_location
+    'app_root' => $app_location
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
 $interactor->boldGreen('Your settings have been saved!', true);
 
 /** @var Application $consoleApp */
-$consoleApp->handle([$projectRoot.'runway', 'config:set', 'runway', $json]);
-
-// $ConfigSetCommand = new ConfigSetCommand([]);
-// $ConfigSetCommand->execute('runway', $json);
+$consoleApp->handle([$projectRoot . 'runway', 'config:set', 'runway', $json]);
