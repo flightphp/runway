@@ -2,22 +2,31 @@
 
 namespace flight\commands;
 
-class ConfigSetCommand extends AbstractBaseCommand {
-    public function __construct(array $config) {
+use flight\util\Json;
+
+/**
+ * 
+ * @property-read bool $backup
+ */
+class ConfigSetCommand extends AbstractBaseCommand
+{
+    public function __construct(array $config)
+    {
         parent::__construct('config:set', 'Set a config value in config.php (uses modern [] syntax)', $config);
 
         $this
             ->argument('<key>', 'Config key (dot notation: database.host)')
             ->argument('<value>', 'JSON-encoded value')
+            ->option('-b --backup', 'Backup the config file before updating')
             ->usage(
                 '<bold>  runway config:set database.host \'{"host":"127.0.0.1"}\'</end>' . PHP_EOL .
-                    '<bold>  runway config:set cache.enabled true</end>' . PHP_EOL
+                '<bold>  runway config:set cache.enabled true</end>' . PHP_EOL
             );
     }
 
-    public function execute($key, $value = '') {
+    public function execute($key, $value = '')
+    {
         $io = $this->app()->io();
-
         $appConfigPath = RUNWAY_PROJECT_ROOT . '/app/config/config.php';
         $dotRunwayPath = RUNWAY_PROJECT_ROOT . '/.runway-config.json';
 
@@ -46,12 +55,17 @@ class ConfigSetCommand extends AbstractBaseCommand {
      * @param mixed $value       whatever value
      * @return integer
      */
-    protected function setConfig(string $configPath, string $key, $value = ''): int {
+    protected function setConfig(string $configPath, string $key, $value = ''): int
+    {
         $io = $this->app()->io();
-
         if (is_file($configPath) === false) {
             $io->error("Config file not found: $configPath", true);
             return 1;
+        }
+
+        $valueLowered = strtolower($value);
+        if (in_array($valueLowered, ['true', 'false', 'null'])) {
+            $value = $valueLowered;
         }
 
         // Load current config
@@ -64,7 +78,7 @@ class ConfigSetCommand extends AbstractBaseCommand {
             return 1;
         }
 
-        // Parse JSON value
+        // Parse JSON value, but silently let it fail
         $decoded = json_decode($value, true);
         if ((isset($value[0]) === true && ($value[0] === '{' || $value[0] === '[')) && json_last_error() !== JSON_ERROR_NONE) {
             $io->error("Invalid JSON: " . json_last_error_msg(), true);
@@ -86,7 +100,7 @@ class ConfigSetCommand extends AbstractBaseCommand {
         $ref = $decoded;
 
         // Backup original
-        if (!copy($configPath, $configPath . '.bak')) {
+        if ($this->backup && !copy($configPath, $configPath . '.bak')) {
             $io->error("Failed to create backup", true);
             return 1;
         }
@@ -135,7 +149,8 @@ class ConfigSetCommand extends AbstractBaseCommand {
      * Set a config in a JSON file (used when app/config/config.php is not present).
      * Creates a backup and writes pretty JSON.
      */
-    public function setConfigJson(string $jsonPath, string $key, $value = ''): int {
+    public function setConfigJson(string $jsonPath, string $key, $value = ''): int
+    {
         $io = $this->app()->io();
 
         $data = [];
@@ -145,13 +160,18 @@ class ConfigSetCommand extends AbstractBaseCommand {
                 $io->error("Failed to read JSON config: $jsonPath", true);
                 return 1;
             }
-            $data = json_decode($contents, true);
+            $data = Json::decode($contents, true);
             if (!is_array($data)) {
                 $data = [];
             }
         }
 
-        // Parse incoming value
+        $valueLowered = strtolower($value);
+        if (in_array($valueLowered, ['true', 'false', 'null'])) {
+            $value = $valueLowered;
+        }
+
+        // Parse incoming value, but silently let it fail
         $decoded = json_decode($value, true);
         if ((isset($value[0]) === true && ($value[0] === '{' || $value[0] === '[')) && json_last_error() !== JSON_ERROR_NONE) {
             $io->error("Invalid JSON: " . json_last_error_msg(), true);
@@ -207,7 +227,8 @@ class ConfigSetCommand extends AbstractBaseCommand {
      * @param int $indent
      * @return string
      */
-    private function var_export_short($value, int $indent = 0): string {
+    private function var_export_short($value, int $indent = 0): string
+    {
         $pad = str_repeat(' ', $indent);
         $step = 4;
 
@@ -244,7 +265,8 @@ class ConfigSetCommand extends AbstractBaseCommand {
      * @param string $source The PHP source code
      * @return string|null The block content or null if not found
      */
-    protected function findReturnBlock(string $source): ?string {
+    protected function findReturnBlock(string $source): ?string
+    {
         $tokens = token_get_all($source);
         $count = count($tokens);
         $startIdx = -1;

@@ -6,25 +6,30 @@ namespace flight\commands;
 
 use flight\commands\AbstractBaseCommand;
 use Ahc\Cli\IO\Interactor;
+use flight\util\Json;
 
-class ConfigMigrateCommand extends AbstractBaseCommand {
+class ConfigMigrateCommand extends AbstractBaseCommand
+{
     /**
      * Construct
      *
      * @param array<string,mixed> $config JSON config from .runway-config.json
      */
-    public function __construct(array $config) {
+    public function __construct(array $config)
+    {
         parent::__construct('config:migrate', 'Migrate runway configuration from .runway-config.json to config.php', $config);
 
         // Add option for config file path
         $this->option('-c --config-file path', 'Path to the runway config file');
     }
 
-    public function interact(Interactor $io): void {
+    public function interact(Interactor $io): void
+    {
         // No interaction needed before execute
     }
 
-    public function execute() {
+    public function execute()
+    {
         $io = $this->app()->io();
         $configFile = $this->configFile;
         if (empty($configFile)) {
@@ -37,7 +42,7 @@ class ConfigMigrateCommand extends AbstractBaseCommand {
             return;
         }
 
-        $runwayConfig = json_decode(file_get_contents($configFile), true) ?? [];
+        $runwayConfig = Json::decode(file_get_contents($configFile), true) ?? [];
 
         $config['runway'] = $this->config['runway'] ?? [];
 
